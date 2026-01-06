@@ -1,0 +1,351 @@
+
+<!DOCTYPE html>  <html lang="en">  
+<head>  
+<meta charset="UTF-8">  
+<meta name="viewport" content="width=1200, initial-scale=1">  
+<title>Sleep Tracker</title>  <style>  
+html,body{  
+  margin:0;  
+  background:#000;  
+  color:#eaeaea;  
+  font-family:system-ui,-apple-system,Segoe UI,sans-serif;  
+}  
+body{display:flex;justify-content:center}  
+#app{width:1200px;padding:20px}  
+  
+.card{  
+  background:#0b0b0b;  
+  border-radius:22px;  
+  padding:18px;  
+  margin-bottom:26px;  
+  box-shadow:0 0 0 1px rgba(255,255,255,.06);  
+}  
+  
+h1{margin:0 0 12px;color:#7db2ff}  
+.small{font-size:12px;opacity:.7}  
+  
+table{  
+  width:100%;  
+  border-collapse:collapse;  
+  table-layout:fixed;  
+}  
+th,td{  
+  border:1px solid rgba(255,255,255,.08);  
+  font-size:12px;  
+  text-align:center;  
+  height:30px;  
+}  
+th:first-child,td:first-child{  
+  width:170px;  
+  text-align:left;  
+  padding-left:10px;  
+}  
+  
+input.inline{  
+  width:100%;  
+  background:none;  
+  border:none;  
+  color:inherit;  
+  outline:none;  
+}  
+  
+.sleep-wrap{display:flex;gap:20px}  
+.sleep-left{width:38%}  
+.sleep-right{width:62%}  
+  
+canvas{display:block}  
+.week-rings{display:flex;gap:28px;flex-wrap:wrap;margin-top:12px}  
+.month-ring{display:flex;justify-content:center;margin-top:12px}  
+  
+/* legend */  
+.legend{  
+  display:flex;  
+  gap:16px;  
+  margin-top:10px;  
+  flex-wrap:wrap;  
+}  
+.legend-item{  
+  display:flex;  
+  align-items:center;  
+  gap:6px;  
+  font-size:12px;  
+  opacity:.85;  
+}  
+.legend-dot{  
+  width:10px;  
+  height:10px;  
+  border-radius:50%;  
+}  
+.red{background:#ff6b6b}  
+.yellow{background:#feca57}  
+.blue{background:#54a0ff}  
+.green{background:#2dff9a}  
+</style>  </head>  <body>  
+<div id="app">  <h1>😴 Sleep Tracker</h1>  <div class="card">  
+<div class="sleep-wrap">  <!-- TABLE -->  <div class="sleep-left">  
+<table id="sleepTable"></table>  
+</div>  <!-- GRAPHS -->  <div class="sleep-right">  <div class="small">Daily Sleep (hrs)</div>  
+<canvas id="dailyGraph" width="720" height="240"></canvas>  <div class="small" style="margin-top:18px">Weekly Breakdown</div>  
+<div class="week-rings" id="weekRings"></div>  <div class="small" style="margin-top:20px">Monthly Overview</div>  
+<div class="month-ring" id="monthRing"></div>  <div class="legend">  
+  <div class="legend-item"><span class="legend-dot red"></span>&lt; 6h (Poor)</div>  
+  <div class="legend-item"><span class="legend-dot yellow"></span>6–7h (Okay)</div>  
+  <div class="legend-item"><span class="legend-dot blue"></span>7–8h (Good)</div>  
+  <div class="legend-item"><span class="legend-dot green"></span>8h+ (Ideal)</div>  
+</div>  </div>  
+</div>  
+</div>  </div>  <script>  
+/* ---------- DATE ---------- */  
+const now=new Date();  
+const Y=now.getFullYear();  
+const M=now.getMonth();  
+const TODAY=now.getDate();  
+const DAYS=new Date(Y,M+1,0).getDate();  
+const KEY=`sleep-${Y}-${M}`;  
+  
+let data=JSON.parse(localStorage.getItem(KEY))||{sleep:{}};  
+function save(){localStorage.setItem(KEY,JSON.stringify(data));render();}  
+  
+/* ---------- HOURS ---------- */  
+function calcHours(s,e){  
+  if(!s||!e)return null;  
+  let a=new Date(`1970-01-01T${s}`);  
+  let b=new Date(`1970-01-01T${e}`);  
+  if(b<a)b.setDate(b.getDate()+1);  
+  return +((b-a)/36e5).toFixed(1);  
+}  
+  
+/* ---------- TABLE ---------- */  
+function renderTable(){  
+  sleepTable.innerHTML="<tr><th>Date</th><th>Slept</th><th>Woke</th><th>Hrs</th></tr>";  
+  for(let d=1;d<=DAYS;d++){  
+    const s=data.sleep[d]||{};  
+    const label=d===TODAY?`Today (${d} Jan)`:`${d} Jan`;  
+    sleepTable.innerHTML+=`  
+    <tr>  
+      <td>${label}</td>  
+      <td><input type="time" class="inline" value="${s.start||""}"  
+        onchange="data.sleep[${d}]={...data.sleep[${d}],start:this.value,hrs:calcHours(this.value,data.sleep[${d}]?.end)};save()"></td>  
+      <td><input type="time" class="inline" value="${s.end||""}"  
+        onchange="data.sleep[${d}]={...data.sleep[${d}],end:this.value,hrs:calcHours(data.sleep[${d}]?.start,this.value)};save()"></td>  
+      <td><input type="number" step="0.1" class="inline" value="${s.hrs??""}"  
+        oninput="data.sleep[${d}]={...data.sleep[${d}],hrs:Number(this.value)};save()"></td>  
+    </tr>`;  
+  }  
+}  
+  
+/* ---------- DAILY GRAPH ---------- */  
+function drawDaily(){  
+  const c=dailyGraph,ctx=c.getContext("2d");  
+  ctx.clearRect(0,0,c.width,c.height);  
+  
+  const pad=50,max=10;  
+  const step=(c.width-2*pad)/(DAYS-1);  
+  const vals=[];  
+  for(let d=1;d<=DAYS;d++) vals.push(data.sleep[d]?.hrs ?? 0);  
+  
+  const ease=t=>1-Math.pow(1-t,3);  
+  let start=null;  
+  
+  function anim(ts){  
+    if(!start)start=ts;  
+    let p=Math.min((ts-start)/900,1);  
+    let e=ease(p);  
+    ctx.clearRect(0,0,c.width,c.height);  
+  
+    ctx.fillStyle="#9a9a9a";  
+    ctx.font="12px system-ui";  
+    [5,6,7,8,9,10].forEach(v=>{  
+      let y=c.height-pad-(v/max)*(c.height-2*pad);  
+      ctx.fillText(v,12,y+4);  
+    });  
+  
+    let gy=c.height-pad-(8/max)*(c.height-2*pad);  
+    ctx.setLineDash([4,4]);  
+    ctx.strokeStyle="red";  
+    ctx.beginPath();  
+    ctx.moveTo(pad,gy);ctx.lineTo(c.width-pad,gy);ctx.stroke();  
+    ctx.setLineDash([]);  
+  
+    const pts=vals.map((v,i)=>({  
+      x:pad+i*step,  
+      y:c.height-pad-(v/max)*(c.height-2*pad)*e  
+    }));  
+  
+    const grad=ctx.createLinearGradient(0,0,0,c.height);  
+    grad.addColorStop(0,"rgba(90,160,255,.45)");  
+    grad.addColorStop(1,"rgba(90,160,255,0)");  
+    ctx.fillStyle=grad;  
+  
+    ctx.beginPath();  
+    pts.forEach((p,i)=>{  
+      if(i===0)ctx.moveTo(p.x,p.y);  
+      else{  
+        let pr=pts[i-1],cx=(pr.x+p.x)/2;  
+        ctx.bezierCurveTo(cx,pr.y,cx,p.y,p.x,p.y);  
+      }  
+    });  
+    ctx.lineTo(pts.at(-1).x,c.height-pad);  
+    ctx.lineTo(pad,c.height-pad);  
+    ctx.closePath();  
+    ctx.fill();  
+  
+    ctx.strokeStyle="#6aa6ff";  
+    ctx.lineWidth=3;  
+    ctx.shadowColor="rgba(106,166,255,.7)";  
+    ctx.shadowBlur=18;  
+    ctx.beginPath();  
+    pts.forEach((p,i)=>{  
+      if(i===0)ctx.moveTo(p.x,p.y);  
+      else{  
+        let pr=pts[i-1],cx=(pr.x+p.x)/2;  
+        ctx.bezierCurveTo(cx,pr.y,cx,p.y,p.x,p.y);  
+      }  
+    });  
+    ctx.stroke();  
+    ctx.shadowBlur=0;  
+  
+    if(p<1)requestAnimationFrame(anim);  
+  }  
+  requestAnimationFrame(anim);  
+}  
+  
+/* ---------- CALENDAR WEEK INDEX ---------- */  
+function getWeekIndex(y,m,d){  
+  const date=new Date(y,m,d);  
+  const first=new Date(y,m,1);  
+  const offset=(8-first.getDay())%7||7;  
+  const firstMon=new Date(y,m,1+offset);  
+  if(date<firstMon) return 0;  
+  return Math.floor((date-firstMon)/86400000/7)+1;  
+}  
+  
+/* ---------- MONTHLY RING ---------- */  
+function drawMonth(){  
+  monthRing.innerHTML="";  
+  let arr=[];  
+  for(let d=1;d<=DAYS;d++){  
+    if(data.sleep[d]?.hrs!=null) arr.push(data.sleep[d].hrs);  
+  }  
+  if(!arr.length) return;  
+  
+  const avg=(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1);  
+  const c=document.createElement("canvas");  
+  c.width=220;c.height=220;  
+  monthRing.appendChild(c);  
+  const ctx=c.getContext("2d");  
+  
+  const colors=arr.map(h=>{  
+    if(h<6) return "#ff6b6b";  
+    if(h<7) return "#feca57";  
+    if(h<8) return "#54a0ff";  
+    return "#2dff9a";  
+  });  
+  
+  let start=null;  
+  function anim(ts){  
+    if(!start)start=ts;  
+    let p=Math.min((ts-start)/1000,1);  
+    let e=1-Math.pow(1-p,3);  
+    ctx.clearRect(0,0,220,220);  
+  
+    const cx=110,cy=110,r=80;  
+    let angle=-Math.PI/2;  
+  
+    arr.forEach((_,i)=>{  
+      let slice=(2*Math.PI/arr.length)*e;  
+      ctx.strokeStyle=colors[i];  
+      ctx.lineWidth=16;  
+      ctx.shadowColor="rgba(45,255,154,.65)";  
+      ctx.shadowBlur=22;  
+      ctx.beginPath();  
+      ctx.arc(cx,cy,r,angle,angle+slice);  
+      ctx.stroke();  
+      angle+=2*Math.PI/arr.length;  
+    });  
+  
+    ctx.shadowBlur=0;  
+    ctx.fillStyle="#fff";  
+    ctx.font="22px system-ui";  
+    ctx.textAlign="center";  
+    ctx.fillText(avg+"h",cx,cy+6);  
+    ctx.font="12px system-ui";  
+    ctx.fillText("Avg",cx,cy-18);  
+  
+    if(p<1)requestAnimationFrame(anim);  
+  }  
+  requestAnimationFrame(anim);  
+}  
+  
+/* ---------- WEEKLY RINGS ---------- */  
+function drawWeekly(){  
+  weekRings.innerHTML="";  
+  let weeks={};  
+  for(let d=1;d<=DAYS;d++){  
+    if(data.sleep[d]?.hrs!=null){  
+      let w=getWeekIndex(Y,M,d);  
+      (weeks[w]=weeks[w]||[]).push(data.sleep[d].hrs);  
+    }  
+  }  
+  
+  Object.entries(weeks).forEach(([wi,arr])=>{  
+    const avg=(arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1);  
+    const c=document.createElement("canvas");  
+    c.width=180;c.height=180;  
+    weekRings.appendChild(c);  
+    const ctx=c.getContext("2d");  
+  
+    const colors=arr.map(h=>{  
+      if(h<6) return "#ff6b6b";  
+      if(h<7) return "#feca57";  
+      if(h<8) return "#54a0ff";  
+      return "#2dff9a";  
+    });  
+  
+    let start=null;  
+    function anim(ts){  
+      if(!start)start=ts;  
+      let p=Math.min((ts-start)/900,1);  
+      let e=1-Math.pow(1-p,3);  
+      ctx.clearRect(0,0,180,180);  
+  
+      const cx=90,cy=90,r=65;  
+      let angle=-Math.PI/2;  
+  
+      arr.forEach((_,i)=>{  
+        let slice=(2*Math.PI/arr.length)*e;  
+        ctx.strokeStyle=colors[i];  
+        ctx.lineWidth=14;  
+        ctx.shadowColor="rgba(45,255,154,.65)";  
+        ctx.shadowBlur=18;  
+        ctx.beginPath();  
+        ctx.arc(cx,cy,r,angle,angle+slice);  
+        ctx.stroke();  
+        angle+=2*Math.PI/arr.length;  
+      });  
+  
+      ctx.shadowBlur=0;  
+      ctx.fillStyle="#fff";  
+      ctx.font="18px system-ui";  
+      ctx.textAlign="center";  
+      ctx.fillText(avg+"h",cx,cy+6);  
+      ctx.font="11px system-ui";  
+      ctx.fillText("Week "+(Number(wi)+1),cx,cy+26);  
+  
+      if(p<1)requestAnimationFrame(anim);  
+    }  
+    requestAnimationFrame(anim);  
+  });  
+}  
+  
+/* ---------- RENDER ---------- */  
+function render(){  
+  renderTable();  
+  drawDaily();  
+  drawWeekly();  
+  drawMonth();  
+}  
+render();  
+</script>  </body>  
+</html>   
+ 
