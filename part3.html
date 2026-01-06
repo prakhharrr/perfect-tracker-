@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<!-- 🔥 ONLY THING THAT ACTUALLY FORCES DESKTOP ON ANDROID -->
+<meta name="viewport" content="width=1200, initial-scale=0.35">
+
+<title>Journal</title>
+
+<style>
+/* stop android auto font scaling */
+*{
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+
+/* force desktop canvas */
+html,body{
+  margin:0;
+  min-width:1200px;
+  background:#000;
+  color:#eaeaea;
+  font-family:system-ui,-apple-system,Segoe UI,sans-serif;
+}
+
+body{
+  display:flex;
+  justify-content:center;
+}
+
+/* desktop width */
+#app{
+  width:900px;
+  padding:20px;
+}
+
+/* card */
+.card{
+  background:#0b0b0b;
+  border-radius:22px;
+  padding:18px;
+  margin-bottom:26px;
+  box-shadow:0 0 0 1px rgba(255,255,255,.06);
+}
+
+h1{margin:0 0 14px;color:#7db2ff}
+.small{font-size:12px;opacity:.7}
+
+/* header */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+}
+.actions{
+  display:flex;
+  gap:8px;
+}
+.actions input,.actions button{
+  background:none;
+  border:1px solid #555;
+  color:inherit;
+  border-radius:8px;
+  padding:6px 10px;
+}
+.actions button{
+  border-color:#7db2ff;
+  color:#7db2ff;
+}
+
+/* mood */
+.mood-row{
+  display:flex;
+  gap:16px;
+  font-size:26px;
+  margin-top:6px;
+}
+.mood-row span{
+  cursor:pointer;
+  opacity:.4;
+}
+.mood-row span.active{
+  opacity:1;
+  transform:scale(1.15);
+}
+
+/* blocks */
+.block{
+  border-left:4px solid #555;
+  padding-left:12px;
+  margin:18px 0;
+}
+.block-title{font-size:14px;margin-bottom:6px}
+.block.yellow{border-color:#feca57}
+.block.green{border-color:#1dd1a1}
+.block.orange{border-color:#ff9f43}
+.block.blue{border-color:#54a0ff}
+.block.purple{border-color:#5f27cd}
+.block.gray{border-color:#8395a7}
+
+/* textarea */
+textarea{
+  width:100%;
+  min-height:80px;
+  background:none;
+  border:none;
+  color:inherit;
+  resize:none;
+  outline:none;
+  font-size:14px;
+}
+
+/* analytics */
+.analytics{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  text-align:center;
+  margin-top:14px;
+}
+.big{font-size:26px;font-weight:700}
+</style>
+</head>
+
+<body>
+<div id="app">
+
+<h1>📓 Journal</h1>
+
+<div class="card">
+  <div class="header">
+    <div>
+      <b id="dateLabel"></b>
+      <div class="small">Write about your day</div>
+    </div>
+
+    <div class="actions">
+      <input type="date" id="journalDate">
+      <input type="text" id="search" placeholder="Search…">
+      <button onclick="saveEntry()">Save Entry</button>
+    </div>
+  </div>
+
+  <div class="block gray">
+    <div class="block-title">✨ How are you feeling today?</div>
+    <div class="mood-row" id="moodRow">
+      <span data-m="1">😄</span>
+      <span data-m="2">🙂</span>
+      <span data-m="3">😐</span>
+      <span data-m="4">😕</span>
+      <span data-m="5">😢</span>
+    </div>
+  </div>
+
+  <div class="block yellow">
+    <div class="block-title">🙏 What am I grateful for today?</div>
+    <textarea id="gratitude"></textarea>
+  </div>
+
+  <div class="block green">
+    <div class="block-title">✨ Today’s Highlights</div>
+    <textarea id="highlights"></textarea>
+  </div>
+
+  <div class="block orange">
+    <div class="block-title">⚠ Today’s Challenges</div>
+    <textarea id="challenges"></textarea>
+  </div>
+
+  <div class="block blue">
+    <div class="block-title">📘 What did I learn?</div>
+    <textarea id="learnings"></textarea>
+  </div>
+
+  <div class="block purple">
+    <div class="block-title">🎯 Tomorrow’s Goals</div>
+    <textarea id="goals"></textarea>
+  </div>
+
+  <div class="block gray">
+    <div class="block-title">📝 Additional Notes</div>
+    <textarea id="notes"></textarea>
+  </div>
+</div>
+
+<div class="card">
+  <b>📊 Journal Analytics</b>
+  <div class="analytics">
+    <div>
+      <div class="big" id="totalEntries">0</div>
+      <div class="small">Total Entries</div>
+    </div>
+    <div>
+      <div class="big" id="streak">0</div>
+      <div class="small">Current Streak</div>
+    </div>
+    <div>
+      <div class="big" id="avgMood">–</div>
+      <div class="small">Average Mood</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const KEY="journal-data";
+let journal=JSON.parse(localStorage.getItem(KEY))||{};
+let currentMood=null;
+
+const dateInput=document.getElementById("journalDate");
+dateInput.valueAsDate=new Date();
+
+function updateDateLabel(){
+  const d=new Date(dateInput.value);
+  const today=new Date().toDateString()===d.toDateString();
+  dateLabel.innerText=
+    (today?"Today · ":"")+
+    d.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+}
+updateDateLabel();
+
+document.querySelectorAll("#moodRow span").forEach(s=>{
+  s.onclick=()=>{
+    currentMood=+s.dataset.m;
+    document.querySelectorAll("#moodRow span").forEach(x=>x.classList.remove("active"));
+    s.classList.add("active");
+  };
+});
+
+document.querySelectorAll("textarea").forEach(t=>{
+  t.addEventListener("input",()=>{
+    t.style.height="auto";
+    t.style.height=t.scrollHeight+"px";
+  });
+});
+
+function loadEntry(){
+  updateDateLabel();
+  const d=dateInput.value;
+  const e=journal[d]||{};
+  ["gratitude","highlights","challenges","learnings","goals","notes"]
+    .forEach(id=>document.getElementById(id).value=e[id]||"");
+  currentMood=e.mood||null;
+  document.querySelectorAll("#moodRow span").forEach(s=>{
+    s.classList.toggle("active",+s.dataset.m===currentMood);
+  });
+}
+dateInput.onchange=loadEntry;
+
+function saveEntry(){
+  const d=dateInput.value;
+  journal[d]={
+    mood:currentMood,
+    gratitude:gratitude.value,
+    highlights:highlights.value,
+    challenges:challenges.value,
+    learnings:learnings.value,
+    goals:goals.value,
+    notes:notes.value
+  };
+  localStorage.setItem(KEY,JSON.stringify(journal));
+  updateAnalytics();
+}
+
+search.oninput=()=>{
+  const q=search.value.toLowerCase();
+  const f=Object.keys(journal).find(d=>JSON.stringify(journal[d]).toLowerCase().includes(q));
+  if(f){dateInput.value=f;loadEntry();}
+};
+
+function updateAnalytics(){
+  const dates=Object.keys(journal).sort();
+  totalEntries.innerText=dates.length;
+
+  let streakCount=0;
+  let d=new Date();
+  while(journal[d.toISOString().slice(0,10)]){
+    streakCount++; d.setDate(d.getDate()-1);
+  }
+  streak.innerText=streakCount;
+
+  const moods=dates.map(d=>journal[d].mood).filter(Boolean);
+  avgMood.innerText=moods.length
+    ? (moods.reduce((a,b)=>a+b)/moods.length).toFixed(1)
+    : "–";
+}
+
+loadEntry();
+updateAnalytics();
+</script>
+
+</body>
+</html>
