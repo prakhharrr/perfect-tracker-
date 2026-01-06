@@ -10,15 +10,55 @@ html, body{
   margin:0;
   padding:0;
   background:#000;
+  color:#eaeaea;
+  font-family: system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
-/* reference width (same as sleep tracker) */
+/* page width same as sleep tracker */
 .page-width{
   width:1200px;
-  margin:0 auto 48px;
+  margin:0 auto;
 }
 
-/* iframe base */
+/* ---------- TABS ---------- */
+.tabs{
+  display:flex;
+  gap:12px;
+  margin:24px auto 32px;
+  width:1200px;
+}
+
+.tab-btn{
+  padding:10px 18px;
+  border-radius:12px;
+  background:#111;
+  color:#aaa;
+  border:1px solid #222;
+  cursor:pointer;
+  font-size:14px;
+}
+
+.tab-btn.active{
+  background:#1a1a1a;
+  color:#7df;
+  border-color:#7df;
+  box-shadow:0 0 12px rgba(125,223,255,.25);
+}
+
+/* ---------- TAB CONTENT ---------- */
+.tab-content{
+  display:none;
+}
+
+.tab-content.active{
+  display:block;
+}
+
+/* ---------- IFRAMES ---------- */
+.iframe-wrap{
+  margin-bottom:48px;
+}
+
 iframe{
   width:100%;
   border:none;
@@ -29,39 +69,72 @@ iframe{
 
 <body>
 
-<!-- PART 1 : Habit Tracker (SCALED TO FIT) -->
-<div class="page-width">
-  <iframe src="part1.html" onload="fitIframe(this)"></iframe>
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="openTab('trackers')">
+    📊 Trackers
+  </button>
+  <button class="tab-btn" onclick="openTab('journal')">
+    📓 Journal
+  </button>
 </div>
 
-<!-- PART 2 : Sleep Tracker (REFERENCE – untouched) -->
-<div class="page-width">
-  <iframe src="part2.html" onload="normalIframe(this)"></iframe>
-</div>
-
-<!-- PART 3 : Journal -->
-<div class="page-width">
-  <iframe src="part3.html" onload="normalIframe(this)"></iframe>
-</div>
-
+<!-- TRACKERS TAB -->
+<div id="trackers" class="tab-content active">
   <div class="page-width">
-  <iframe src="part4.html" onload="normalIframe(this)"></iframe>
+
+    <!-- PART 1 : Habit Tracker (scaled to fit, no scroll, no cut) -->
+    <div class="iframe-wrap">
+      <iframe src="part1.html" onload="fitIframe(this)"></iframe>
+    </div>
+
+    <!-- PART 2 : Sleep Tracker (reference, untouched) -->
+    <div class="iframe-wrap">
+      <iframe src="part2.html" onload="normalIframe(this)"></iframe>
+    </div>
+    <div class="iframe-wrap">
+      <iframe src="part4.html" onload="fitIframe(this)"></iframe>
+    </div>
+
   </div>
+</div>
+
+<!-- JOURNAL TAB -->
+<div id="journal" class="tab-content">
+  <div class="page-width">
+
+    <!-- PART 3 : Journal -->
+    <div class="iframe-wrap">
+      <iframe src="part3.html" onload="normalIframe(this)"></iframe>
+    </div>
+
+  </div>
+</div>
 
 <script>
+/* ---------- TAB LOGIC ---------- */
+function openTab(tabId){
+  document.querySelectorAll('.tab-content').forEach(t=>{
+    t.classList.remove('active');
+  });
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    b.classList.remove('active');
+  });
+
+  document.getElementById(tabId).classList.add('active');
+  event.target.classList.add('active');
+}
+
+/* ---------- IFRAME HELPERS ---------- */
 function fitIframe(iframe){
   try{
     const doc = iframe.contentWindow.document;
     const body = doc.body;
 
-    // get actual content width
     const contentWidth = body.scrollWidth;
     const frameWidth = 1200;
-
-    // calculate scale
     const scale = frameWidth / contentWidth;
 
-    // apply scale ONLY if needed
     if(scale < 1){
       body.style.transform = `scale(${scale})`;
       body.style.transformOrigin = "top left";
@@ -71,7 +144,6 @@ function fitIframe(iframe){
     body.style.margin = "0";
     body.style.overflow = "hidden";
 
-    // fix height after scaling
     iframe.style.height =
       body.scrollHeight * scale + "px";
 
