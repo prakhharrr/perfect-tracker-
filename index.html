@@ -14,7 +14,7 @@ html, body{
   font-family: system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
-/* page width (reference = sleep tracker) */
+/* page width same as sleep tracker */
 .page-width{
   width:1200px;
   margin:0 auto;
@@ -85,15 +85,15 @@ iframe{
 
     <!-- PART 1 -->
     <div class="iframe-wrap">
-      <iframe id="iframe-part1" src="part1.html"></iframe>
+      <iframe src="part1.html" onload="fitIframe(this)"></iframe>
     </div>
 
     <!-- PART 2 -->
     <div class="iframe-wrap">
-      <iframe id="iframe-part2" src="part2.html"></iframe>
+      <iframe src="part2.html" onload="normalIframe(this)"></iframe>
     </div>
     <div class="iframe-wrap">
-      <iframe id="iframe-part4" src="part4.html"></iframe>
+      <iframe src="part4.html" onload="fitIframe(this)"></iframe>
     </div>
 
   </div>
@@ -103,7 +103,77 @@ iframe{
 <div id="journal" class="tab-content">
   <div class="page-width">
 
-    <!-- PART 3 -->
+    <!-- PART 3 (ONLY HERE) -->
+    <div class="iframe-wrap">
+      <iframe src="part3.html" onload="normalIframe(this)"></iframe>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ---------- TAB LOGIC (WITH PERSISTENCE) ---------- */
+const tabs = document.querySelectorAll(".tab-btn");
+const contents = document.querySelectorAll(".tab-content");
+
+function openTab(tabId){
+  contents.forEach(c => c.classList.remove("active"));
+  tabs.forEach(b => b.classList.remove("active"));
+
+  document.getElementById(tabId).classList.add("active");
+  document.querySelector(`[data-tab="${tabId}"]`).classList.add("active");
+
+  localStorage.setItem("activeTab", tabId);
+}
+
+tabs.forEach(btn=>{
+  btn.addEventListener("click", () => {
+    openTab(btn.dataset.tab);
+  });
+});
+
+/* ---------- IFRAME HELPERS (UNCHANGED) ---------- */
+function fitIframe(iframe){
+  try{
+    const doc = iframe.contentWindow.document;
+    const body = doc.body;
+
+    const contentWidth = body.scrollWidth;
+    const frameWidth = 1200;
+    const scale = frameWidth / contentWidth;
+
+    if(scale < 1){
+      body.style.transform = `scale(${scale})`;
+      body.style.transformOrigin = "top left";
+      body.style.width = contentWidth + "px";
+    }
+
+    body.style.margin = "0";
+    body.style.overflow = "hidden";
+
+    iframe.style.height =
+      body.scrollHeight * scale + "px";
+
+  }catch(e){}
+}
+
+function normalIframe(iframe){
+  try{
+    const doc = iframe.contentWindow.document;
+    iframe.style.height =
+      doc.documentElement.scrollHeight + "px";
+  }catch(e){}
+}
+
+/* ---------- INITIAL LOAD ---------- */
+window.addEventListener("load", () => {
+  const savedTab = localStorage.getItem("activeTab") || "trackers";
+  openTab(savedTab);
+});
+</script>
+
+</body>
+</html>    <!-- PART 3 -->
     <div class="iframe-wrap">
       <iframe id="iframe-part3" src="part3.html"></iframe>
     </div>
