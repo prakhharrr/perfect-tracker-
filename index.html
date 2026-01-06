@@ -1,29 +1,60 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Merged Page</title>
+<meta name="viewport" content="width=1200, initial-scale=1">
+<title>Personal Tracker</title>
 
 <style>
-body{
+html, body{
   margin:0;
+  padding:0;
   background:#000;
+  color:#eaeaea;
 }
-iframe{
+
+/* wrapper for each part */
+.iframe-wrap{
   width:1200px;
+  margin:0 auto 48px;
+}
+
+/* iframe base */
+iframe{
+  width:100%;
   border:none;
   display:block;
-  margin:0 auto;
 }
 </style>
 </head>
 
 <body>
 
-<iframe src="part1.html"></iframe>
-<iframe src="part2.html"></iframe>
-<iframe src="part3.html"></iframe>
-<iframe src="part4.html"></iframe>
+<!-- PART 1 -->
+<div class="iframe-wrap">
+  <iframe src="part1.html" onload="resizeIframe(this)"></iframe>
+</div>
+
+<!-- PART 2 -->
+<div class="iframe-wrap">
+  <iframe src="part2.html" onload="resizeIframe(this)"></iframe>
+</div>
+
+<!-- PART 3 -->
+<div class="iframe-wrap">
+  <iframe src="part3.html" onload="resizeIframe(this)"></iframe>
+</div>
+
+<script>
+function resizeIframe(iframe){
+  try{
+    const doc = iframe.contentWindow.document;
+    iframe.style.height = doc.documentElement.scrollHeight + "px";
+  }catch(e){
+    console.log("iframe resize blocked");
+  }
+}
+</script>
 
 </body>
 </html>
