@@ -12,51 +12,77 @@ html, body{
   background:#000;
 }
 
-/* master width — SAME as Part 2 */
+/* reference width (same as sleep tracker) */
 .page-width{
   width:1200px;
   margin:0 auto 48px;
 }
 
-/* iframe normalization */
+/* iframe base */
 iframe{
-  width:1200px;          /* force same width */
-  max-width:1200px;
+  width:100%;
   border:none;
   display:block;
-  overflow:hidden;       /* kill horizontal scroll */
 }
 </style>
 </head>
 
 <body>
 
-<!-- PART 1 : Habit Tracker -->
+<!-- PART 1 : Habit Tracker (SCALED TO FIT) -->
 <div class="page-width">
-  <iframe src="part1.html" onload="resizeIframe(this)"></iframe>
+  <iframe src="part1.html" onload="fitIframe(this)"></iframe>
 </div>
 
-<!-- PART 2 : Sleep Tracker (REFERENCE WIDTH) -->
+<!-- PART 2 : Sleep Tracker (REFERENCE – untouched) -->
 <div class="page-width">
-  <iframe src="part2.html" onload="resizeIframe(this)"></iframe>
+  <iframe src="part2.html" onload="normalIframe(this)"></iframe>
 </div>
 
 <!-- PART 3 : Journal -->
 <div class="page-width">
-  <iframe src="part3.html" onload="resizeIframe(this)"></iframe>
+  <iframe src="part3.html" onload="normalIframe(this)"></iframe>
 </div>
 
+  <div class="page-width">
+  <iframe src="part4.html" onload="normalIframe(this)"></iframe>
+  </div>
+
 <script>
-function resizeIframe(iframe){
+function fitIframe(iframe){
   try{
     const doc = iframe.contentWindow.document;
+    const body = doc.body;
 
-    /* force same visual width inside iframe */
-    doc.documentElement.style.width = "1200px";
-    doc.body.style.width = "1200px";
-    doc.body.style.margin = "0 auto";
-    doc.body.style.overflowX = "hidden";
+    // get actual content width
+    const contentWidth = body.scrollWidth;
+    const frameWidth = 1200;
 
+    // calculate scale
+    const scale = frameWidth / contentWidth;
+
+    // apply scale ONLY if needed
+    if(scale < 1){
+      body.style.transform = `scale(${scale})`;
+      body.style.transformOrigin = "top left";
+      body.style.width = contentWidth + "px";
+    }
+
+    body.style.margin = "0";
+    body.style.overflow = "hidden";
+
+    // fix height after scaling
+    iframe.style.height =
+      body.scrollHeight * scale + "px";
+
+  }catch(e){
+    console.log("iframe fit blocked");
+  }
+}
+
+function normalIframe(iframe){
+  try{
+    const doc = iframe.contentWindow.document;
     iframe.style.height =
       doc.documentElement.scrollHeight + "px";
   }catch(e){
