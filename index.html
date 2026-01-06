@@ -14,7 +14,7 @@ html, body{
   font-family: system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
-/* page width same as sleep tracker */
+/* fixed desktop width */
 .page-width{
   width:1200px;
   margin:0 auto;
@@ -71,26 +71,18 @@ iframe{
 
 <!-- TABS -->
 <div class="tabs">
-  <button class="tab-btn" id="btn-trackers"
-          onclick="openTab('trackers', this)">
-    📊 Trackers
-  </button>
-  <button class="tab-btn" id="btn-journal"
-          onclick="openTab('journal', this)">
-    📓 Journal
-  </button>
+  <button id="btn-trackers" class="tab-btn">📊 Trackers</button>
+  <button id="btn-journal" class="tab-btn">📓 Journal</button>
 </div>
 
-<!-- TRACKERS TAB -->
+<!-- TRACKERS TAB (ONLY part 1 + 2) -->
 <div id="trackers" class="tab-content">
   <div class="page-width">
 
-    <!-- PART 1 -->
     <div class="iframe-wrap">
       <iframe src="part1.html" onload="fitIframe(this)"></iframe>
     </div>
 
-    <!-- PART 2 -->
     <div class="iframe-wrap">
       <iframe src="part2.html" onload="normalIframe(this)"></iframe>
     </div>
@@ -101,9 +93,88 @@ iframe{
   </div>
 </div>
 
-<!-- JOURNAL TAB -->
+<!-- JOURNAL TAB (ONLY part 3) -->
 <div id="journal" class="tab-content">
   <div class="page-width">
+
+    <div class="iframe-wrap">
+      <iframe src="part3.html" onload="normalIframe(this)"></iframe>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ---------- TAB CORE (BULLETPROOF) ---------- */
+
+const trackersTab = document.getElementById('trackers');
+const journalTab  = document.getElementById('journal');
+const btnTrackers = document.getElementById('btn-trackers');
+const btnJournal  = document.getElementById('btn-journal');
+
+function showTab(tab){
+  // content
+  trackersTab.classList.remove('active');
+  journalTab.classList.remove('active');
+
+  // buttons
+  btnTrackers.classList.remove('active');
+  btnJournal.classList.remove('active');
+
+  if(tab === 'journal'){
+    journalTab.classList.add('active');
+    btnJournal.classList.add('active');
+  }else{
+    trackersTab.classList.add('active');
+    btnTrackers.classList.add('active');
+  }
+
+  localStorage.setItem('activeTab', tab);
+}
+
+btnTrackers.onclick = () => showTab('trackers');
+btnJournal.onclick  = () => showTab('journal');
+
+/* restore tab on reload */
+const savedTab = localStorage.getItem('activeTab') || 'trackers';
+showTab(savedTab);
+
+/* ---------- IFRAME HELPERS (UNCHANGED) ---------- */
+function fitIframe(iframe){
+  try{
+    const doc = iframe.contentWindow.document;
+    const body = doc.body;
+
+    const contentWidth = body.scrollWidth;
+    const frameWidth = 1200;
+    const scale = frameWidth / contentWidth;
+
+    if(scale < 1){
+      body.style.transform = `scale(${scale})`;
+      body.style.transformOrigin = "top left";
+      body.style.width = contentWidth + "px";
+    }
+
+    body.style.margin = "0";
+    body.style.overflow = "hidden";
+
+    iframe.style.height =
+      body.scrollHeight * scale + "px";
+
+  }catch(e){}
+}
+
+function normalIframe(iframe){
+  try{
+    const doc = iframe.contentWindow.document;
+    iframe.style.height =
+      doc.documentElement.scrollHeight + "px";
+  }catch(e){}
+}
+</script>
+
+</body>
+</html>  <div class="page-width">
 
     <!-- PART 3 -->
     <div class="iframe-wrap">
