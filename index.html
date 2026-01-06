@@ -10,38 +10,39 @@ html, body{
   margin:0;
   padding:0;
   background:#000;
-  color:#eaeaea;
 }
 
-/* wrapper for each part */
-.iframe-wrap{
+/* master width — SAME as Part 2 */
+.page-width{
   width:1200px;
   margin:0 auto 48px;
 }
 
-/* iframe base */
+/* iframe normalization */
 iframe{
-  width:100%;
+  width:1200px;          /* force same width */
+  max-width:1200px;
   border:none;
   display:block;
+  overflow:hidden;       /* kill horizontal scroll */
 }
 </style>
 </head>
 
 <body>
 
-<!-- PART 1 -->
-<div class="iframe-wrap">
+<!-- PART 1 : Habit Tracker -->
+<div class="page-width">
   <iframe src="part1.html" onload="resizeIframe(this)"></iframe>
 </div>
 
-<!-- PART 2 -->
-<div class="iframe-wrap">
+<!-- PART 2 : Sleep Tracker (REFERENCE WIDTH) -->
+<div class="page-width">
   <iframe src="part2.html" onload="resizeIframe(this)"></iframe>
 </div>
 
-<!-- PART 3 -->
-<div class="iframe-wrap">
+<!-- PART 3 : Journal -->
+<div class="page-width">
   <iframe src="part3.html" onload="resizeIframe(this)"></iframe>
 </div>
 
@@ -49,7 +50,15 @@ iframe{
 function resizeIframe(iframe){
   try{
     const doc = iframe.contentWindow.document;
-    iframe.style.height = doc.documentElement.scrollHeight + "px";
+
+    /* force same visual width inside iframe */
+    doc.documentElement.style.width = "1200px";
+    doc.body.style.width = "1200px";
+    doc.body.style.margin = "0 auto";
+    doc.body.style.overflowX = "hidden";
+
+    iframe.style.height =
+      doc.documentElement.scrollHeight + "px";
   }catch(e){
     console.log("iframe resize blocked");
   }
