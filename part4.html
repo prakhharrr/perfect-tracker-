@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1200, initial-scale=1">
+<title>Sleep Timing Graph – Continuous Month</title>
+
+<style>
+html,body{
+  margin:0;
+  background:#000;
+  color:#eaeaea;
+  font-family:system-ui,-apple-system,Segoe UI,sans-serif;
+}
+body{
+  display:flex;
+  justify-content:center;
+  padding:40px;
+}
+.card{
+  background:#0b0b0b;
+  border-radius:22px;
+  padding:20px;
+  box-shadow:0 0 0 1px rgba(255,255,255,.06);
+}
+.small{font-size:12px;opacity:.7;margin-bottom:8px}
+canvas{display:block}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <div class="small">Sleep Timing Pattern (Full Month)</div>
+  <canvas id="timingGraph" width="720" height="240"></canvas>
+</div>
+
+<script>
+/* ================= DATE ================= */
+const now = new Date();
+const Y = now.getFullYear();
+const M = now.getMonth();
+const DAYS = new Date(Y, M + 1, 0).getDate();
+
+/* ================= SAMPLE DATA ================= */
+/* (replace with your real source) */
+const sleepData = {
+  1:{start:"23:40",end:"07:20"},
+  2:{start:"00:10",end:"08:00"},
+  5:{start:"23:30",end:"06:45"},
+  9:{start:"01:00",end:"08:40"},
+  15:{start:"23:55",end:"07:10"}
+};
+
+/* ================= CORE ================= */
+const canvas = timingGraph;
+const ctx = canvas.getContext("2d");
+const pad = 50;
+const step = (canvas.width - 2 * pad) / (DAYS - 1);
+const min = 20, max = 36; // 8PM → 12PM
+
+function toHour(t){
+  if(!t) return null;
+  let [h,m] = t.split(":").map(Number);
+  let v = h + m / 60;
+  if(v < 12) v += 24;
+  return v;
+}
+
+/* ---------- BUILD FULL MONTH ARRAYS ---------- */
+let slept = new Array(DAYS).fill(null);
+let woke  = new Array(DAYS).fill(null);
+
+for(let d=1; d<=DAYS; d++){
+  slept[d-1] = toHour(sleepData[d]?.start);
+  woke[d-1]  = toHour(sleepData[d]?.end);
+}
+
+/* ---------- CONTINUITY PATCH (carry-forward) ---------- */
+function makeContinuous(arr){
+  let last = null;
+  return arr.map(v=>{
+    if(v != null){
+      last = v;
+      return v;
+    }
+    return last; // carry previous value
+  });
+}
+
+slept = makeContinuous(slept);
+woke  = makeContinuous(woke);
+
+/* ================= ANIMATION ================= */
+const ease = t => 1 - Math.pow(1 - t, 3);
+let startTime = null;
+
+function drawLine(arr, color, e){
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 18;
+  ctx.beginPath();
+
+  arr.forEach((v,i)=>{
+    if(v == null) return;
+    let x = pad + i * step;
+    let y = canvas.height - pad -
+      (v - min) / (max - min) * (canvas.height - 2 * pad) * e;
+
+    if(i === 0){
+      ctx.moveTo(x,y);
+    }else{
+      let px = pad + (i-1) * step;
+      let py = canvas.height - pad -
+        (arr[i-1] - min) / (max - min) * (canvas.height - 2 * pad) * e;
+      let cx = (px + x) / 2;
+      ctx.bezierCurveTo(cx, py, cx, y, x, y);
+    }
+  });
+
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+}
+
+function animate(ts){
+  if(!startTime) startTime = ts;
+  let p = Math.min((ts - startTime) / 900, 1);
+  let e = ease(p);
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  /* Y axis */
+  ctx.fillStyle="#9a9a9a";
+  ctx.font="12px system-ui";
+  for(let h=20; h<=36; h+=2){
+    let y = canvas.height - pad -
+      (h - min) / (max - min) * (canvas.height - 2 * pad);
+    let lbl = h >= 24 ? `${h-24}:00` : `${h}:00`;
+    ctx.fillText(lbl, 8, y + 4);
+  }
+
+  /* X ticks – full month */
+  ctx.font="11px system-ui";
+  for(let d=1; d<=DAYS; d++){
+    let x = pad + (d-1) * step;
+    if(d % 2 === 1) ctx.fillText(d, x-6, canvas.height-10);
+  }
+
+  /* shaded sleep duration */
+  ctx.fillStyle="rgba(255,159,67,.18)";
+  slept.forEach((s,i)=>{
+    if(s == null || woke[i] == null) return;
+    let x = pad + i * step;
+    let y1 = canvas.height - pad -
+      (s - min) / (max - min) * (canvas.height - 2 * pad) * e;
+    let y2 = canvas.height - pad -
+      (woke[i] - min) / (max - min) * (canvas.height - 2 * pad) * e;
+    ctx.fillRect(x-6, y1, 12, y2 - y1);
+  });
+
+  /* curves */
+  drawLine(slept, "#ff9f43", e); // slept
+  drawLine(woke,  "#2dff9a", e); // woke
+
+  if(p < 1) requestAnimationFrame(animate);
+}
+
+requestAnimationFrame(animate);
+</script>
+
+</body>
+</html>
