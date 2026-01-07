@@ -100,8 +100,8 @@ iframe{
   </div>
 </div>
 
-<script>
-/* ---------------- TAB SYSTEM (UNCHANGED) ---------------- */
+<script defer>
+/* ---------------- TAB SYSTEM (PURE & SAFE) ---------------- */
 
 const panels = {
   trackers: document.getElementById('panelTrackers'),
@@ -128,12 +128,10 @@ function switchTab(name){
 buttons.trackers.addEventListener('click', ()=>switchTab('trackers'));
 buttons.journal.addEventListener('click', ()=>switchTab('journal'));
 
-/* restore tab */
 const saved = localStorage.getItem('activeTab');
 switchTab(saved === 'journal' ? 'journal' : 'trackers');
 
-
-/* ---------------- IFRAME INIT (SAME LOGIC) ---------------- */
+/* ---------------- IFRAME INIT ---------------- */
 
 function initIframe(iframe, mode){
   if(iframe.dataset.init) return;
@@ -143,7 +141,7 @@ function initIframe(iframe, mode){
     const doc = iframe.contentWindow.document;
     const body = doc.body;
 
-    if(mode === 'fit'){   // part 1 only
+    if(mode === 'fit'){
       const scale = 1200 / body.scrollWidth;
       if(scale < 1){
         body.style.transform = `scale(${scale})`;
@@ -159,17 +157,19 @@ function initIframe(iframe, mode){
   }catch(e){}
 }
 
-document.getElementById('iframe1')
-  .addEventListener('load', e=>initIframe(e.target,'fit'));
+window.addEventListener('load', ()=>{
+  document.getElementById('iframe1')
+    .addEventListener('load', e=>initIframe(e.target,'fit'));
 
-document.getElementById('iframe2')
-  .addEventListener('load', e=>initIframe(e.target,'normal'));
+  document.getElementById('iframe2')
+    .addEventListener('load', e=>initIframe(e.target,'normal'));
 
-document.getElementById('iframe4')
-  .addEventListener('load', e=>initIframe(e.target,'normal'));
+  document.getElementById('iframe4')
+    .addEventListener('load', e=>initIframe(e.target,'normal'));
 
-document.getElementById('iframe3')
-  .addEventListener('load', e=>initIframe(e.target,'normal'));
+  document.getElementById('iframe3')
+    .addEventListener('load', e=>initIframe(e.target,'normal'));
+});
 </script>
 
 </body>
