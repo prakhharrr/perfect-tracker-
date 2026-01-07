@@ -14,7 +14,7 @@ html,body{
   font-family:system-ui,-apple-system,Segoe UI,sans-serif;
 }
 
-/* fixed desktop width */
+/* fixed width */
 .page-width{
   width:1200px;
   margin:0 auto;
@@ -43,16 +43,16 @@ html,body{
   border-color:#7df;
 }
 
-/* tab panels */
-.tab-content{
+/* panels */
+.tab-panel{
   display:none;
 }
-.tab-content.active{
+.tab-panel.active{
   display:block;
 }
 
 /* iframe */
-.iframe-wrap{ margin-bottom:48px; }
+.iframe-wrap{margin-bottom:48px;}
 iframe{
   width:100%;
   border:none;
@@ -65,45 +65,103 @@ iframe{
 
 <!-- TABS -->
 <div class="tabs">
-  <button id="btn-trackers" class="tab-btn">📊 Trackers</button>
-  <button id="btn-journal"  class="tab-btn">📓 Journal</button>
+  <button id="tabTrackers" class="tab-btn">📊 Trackers</button>
+  <button id="tabJournal"  class="tab-btn">📓 Journal</button>
 </div>
 
-<!-- TRACKERS TAB -->
-<div id="tab-trackers" class="tab-content">
+<!-- TRACKERS -->
+<div id="panelTrackers" class="tab-panel">
   <div class="page-width">
     <div class="iframe-wrap">
-      <iframe id="iframe-part1" src="part1.html"></iframe>
+      <iframe id="iframe1" src="part1.html"></iframe>
     </div>
     <div class="iframe-wrap">
-      <iframe id="iframe-part2" src="part2.html"></iframe>
+      <iframe id="iframe2" src="part2.html"></iframe>
     </div>
     <div class="iframe-wrap">
-      <iframe id="iframe-part4" src="part4.html"></iframe>
+      <iframe id="iframe4" src="part4.html"></iframe>
     </div>
   </div>
 </div>
 
-<!-- JOURNAL TAB -->
-<div id="tab-journal" class="tab-content">
+<!-- JOURNAL -->
+<div id="panelJournal" class="tab-panel">
   <div class="page-width">
     <div class="iframe-wrap">
-      <iframe id="iframe-part3" src="part3.html"></iframe>
+      <iframe id="iframe3" src="part3.html"></iframe>
     </div>
   </div>
 </div>
 
 <script>
-/* ---------------- TAB SYSTEM (PURE, NO SIDE EFFECTS) ---------------- */
+/* ---------------- TAB SYSTEM (PURE & SAFE) ---------------- */
 
-const tabs = {
-  trackers: document.getElementById('tab-trackers'),
-  journal:  document.getElementById('tab-journal')
+const panels = {
+  trackers: document.getElementById('panelTrackers'),
+  journal:  document.getElementById('panelJournal')
 };
+
 const buttons = {
-  trackers: document.getElementById('btn-trackers'),
-  journal:  document.getElementById('btn-journal')
+  trackers: document.getElementById('tabTrackers'),
+  journal:  document.getElementById('tabJournal')
 };
+
+function switchTab(name){
+  panels.trackers.classList.remove('active');
+  panels.journal.classList.remove('active');
+  buttons.trackers.classList.remove('active');
+  buttons.journal.classList.remove('active');
+
+  panels[name].classList.add('active');
+  buttons[name].classList.add('active');
+
+  localStorage.setItem('activeTab', name);
+}
+
+buttons.trackers.addEventListener('click', ()=>switchTab('trackers'));
+buttons.journal.addEventListener('click', ()=>switchTab('journal'));
+
+/* restore tab ONCE */
+const saved = localStorage.getItem('activeTab');
+switchTab(saved === 'journal' ? 'journal' : 'trackers');
+
+
+/* ---------------- IFRAME INIT (RUN ONCE EVER) ---------------- */
+
+function initIframe(iframe, mode){
+  if(iframe.dataset.init) return;
+  iframe.dataset.init = "1";
+
+  try{
+    const doc = iframe.contentWindow.document;
+    const body = doc.body;
+
+    if(mode === 'fit'){   // part 1
+      const scale = 1200 / body.scrollWidth;
+      if(scale < 1){
+        body.style.transform = `scale(${scale})`;
+        body.style.transformOrigin = "top left";
+        body.style.width = body.scrollWidth+"px";
+      }
+      body.style.overflow = "hidden";
+      iframe.style.height = body.scrollHeight * scale + "px";
+    }else{
+      iframe.style.height =
+        doc.documentElement.scrollHeight + "px";
+    }
+  }catch(e){}
+}
+
+document.getElementById('iframe1')
+  .addEventListener('load', e=>initIframe(e.target,'fit'));
+document.getElementById('iframe2')
+  .addEventListener('load', e=>initIframe(e.target,'normal'));
+document.getElementById('iframe3')
+  .addEventListener('load', e=>initIframe(e.target,'normal'));
+</script>
+
+</body>
+</html>};
 
 function activateTab(name){
   Object.keys(tabs).forEach(k=>{
