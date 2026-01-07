@@ -6,12 +6,12 @@
 <title>Personal Tracker</title>
 
 <style>
-html, body{
+html,body{
   margin:0;
   padding:0;
   background:#000;
   color:#eaeaea;
-  font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+  font-family:system-ui,-apple-system,Segoe UI,sans-serif;
 }
 
 /* fixed desktop width */
@@ -20,7 +20,7 @@ html, body{
   margin:0 auto;
 }
 
-/* ---------- TABS ---------- */
+/* tabs */
 .tabs{
   display:flex;
   gap:12px;
@@ -35,30 +35,24 @@ html, body{
   color:#aaa;
   border:1px solid #222;
   cursor:pointer;
-  font-size:14px;
 }
 
 .tab-btn.active{
   background:#1a1a1a;
   color:#7df;
   border-color:#7df;
-  box-shadow:0 0 12px rgba(125,223,255,.25);
 }
 
-/* ---------- TAB CONTENT ---------- */
+/* tab panels */
 .tab-content{
   display:none;
 }
-
 .tab-content.active{
   display:block;
 }
 
-/* ---------- IFRAMES ---------- */
-.iframe-wrap{
-  margin-bottom:48px;
-}
-
+/* iframe */
+.iframe-wrap{ margin-bottom:48px; }
 iframe{
   width:100%;
   border:none;
@@ -72,38 +66,103 @@ iframe{
 <!-- TABS -->
 <div class="tabs">
   <button id="btn-trackers" class="tab-btn">📊 Trackers</button>
-  <button id="btn-journal" class="tab-btn">📓 Journal</button>
+  <button id="btn-journal"  class="tab-btn">📓 Journal</button>
 </div>
 
-<!-- TRACKERS TAB (ONLY part 1 + 2) -->
-<div id="trackers" class="tab-content">
+<!-- TRACKERS TAB -->
+<div id="tab-trackers" class="tab-content">
   <div class="page-width">
-
     <div class="iframe-wrap">
-      <iframe src="part1.html" onload="fitIframe(this)"></iframe>
-    </div>
-
-    <div class="iframe-wrap">
-      <iframe src="part2.html" onload="normalIframe(this)"></iframe>
+      <iframe id="iframe-part1" src="part1.html"></iframe>
     </div>
     <div class="iframe-wrap">
-      <iframe src="part4.html" onload="fitIframe(this)"></iframe>
+      <iframe id="iframe-part2" src="part2.html"></iframe>
     </div>
-
+    <div class="iframe-wrap">
+      <iframe id="iframe-part4" src="part4.html"></iframe>
+    </div>
   </div>
 </div>
 
-<!-- JOURNAL TAB (ONLY part 3) -->
-<div id="journal" class="tab-content">
+<!-- JOURNAL TAB -->
+<div id="tab-journal" class="tab-content">
   <div class="page-width">
-
     <div class="iframe-wrap">
-      <iframe src="part3.html" onload="normalIframe(this)"></iframe>
+      <iframe id="iframe-part3" src="part3.html"></iframe>
     </div>
-
   </div>
 </div>
 
+<script>
+/* ---------------- TAB SYSTEM (PURE, NO SIDE EFFECTS) ---------------- */
+
+const tabs = {
+  trackers: document.getElementById('tab-trackers'),
+  journal:  document.getElementById('tab-journal')
+};
+const buttons = {
+  trackers: document.getElementById('btn-trackers'),
+  journal:  document.getElementById('btn-journal')
+};
+
+function activateTab(name){
+  Object.keys(tabs).forEach(k=>{
+    tabs[k].classList.remove('active');
+    buttons[k].classList.remove('active');
+  });
+
+  tabs[name].classList.add('active');
+  buttons[name].classList.add('active');
+  localStorage.setItem('activeTab', name);
+}
+
+buttons.trackers.onclick = ()=>activateTab('trackers');
+buttons.journal.onclick  = ()=>activateTab('journal');
+
+/* restore tab on reload */
+activateTab(localStorage.getItem('activeTab') || 'trackers');
+
+
+/* ---------------- IFRAME RESIZE (RUN ONCE ONLY) ---------------- */
+
+function resizeOnce(iframe, mode){
+  if(iframe.dataset.done) return;
+  iframe.dataset.done = "1";
+
+  try{
+    const doc = iframe.contentWindow.document;
+    const body = doc.body;
+
+    if(mode === 'fit'){   // part 1
+      const contentWidth = body.scrollWidth;
+      const scale = 1200 / contentWidth;
+      if(scale < 1){
+        body.style.transform = `scale(${scale})`;
+        body.style.transformOrigin = "top left";
+        body.style.width = contentWidth+"px";
+      }
+      body.style.overflow = "hidden";
+      iframe.style.height = body.scrollHeight * scale + "px";
+    }else{
+      iframe.style.height =
+        doc.documentElement.scrollHeight + "px";
+    }
+  }catch(e){}
+}
+
+/* attach load listeners ONCE */
+document.getElementById('iframe-part1')
+  .addEventListener('load', e=>resizeOnce(e.target,'fit'));
+
+document.getElementById('iframe-part2')
+  .addEventListener('load', e=>resizeOnce(e.target,'normal'));
+
+document.getElementById('iframe-part3')
+  .addEventListener('load', e=>resizeOnce(e.target,'normal'));
+</script>
+
+</body>
+</html>
 <script>
 /* ---------- TAB CORE (BULLETPROOF) ---------- */
 
