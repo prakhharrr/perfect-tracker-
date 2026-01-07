@@ -101,6 +101,12 @@ iframe{
 </div>
 
 <script defer>
+  // remove accidental text nodes from body (mobile chrome bug fix)
+document.body.childNodes.forEach(n=>{
+  if(n.nodeType === Node.TEXT_NODE && n.textContent.trim()){
+    n.remove();
+  }
+});
 /* ---------------- TAB SYSTEM (PURE & SAFE) ---------------- */
 
 const panels = {
