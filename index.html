@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="icon-512.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=1200, initial-scale=1">
 <title>Personal Tracker</title>
@@ -152,6 +155,11 @@ buttons.journal.onclick  = ()=>switchTab('journal');
 /* restore tab */
 switchTab(localStorage.getItem('activeTab') || 'trackers');
 </script>
+  <script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js");
+}
+  </script>
 
 </body>
 </html>
