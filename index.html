@@ -44,15 +44,11 @@ html,body{
 }
 
 /* panels */
-.tab-panel{
-  display:none;
-}
-.tab-panel.active{
-  display:block;
-}
+.tab-panel{ display:none; }
+.tab-panel.active{ display:block; }
 
 /* iframe */
-.iframe-wrap{margin-bottom:48px;}
+.iframe-wrap{ margin-bottom:48px; }
 iframe{
   width:100%;
   border:none;
@@ -73,10 +69,10 @@ iframe{
 <div id="panelTrackers" class="tab-panel">
   <div class="page-width">
     <div class="iframe-wrap">
-      <iframe id="iframe1" src="part1.html"></iframe>
+      <iframe id="iframe1" data-src="part1.html"></iframe>
     </div>
     <div class="iframe-wrap">
-      <iframe id="iframe2" src="part2.html"></iframe>
+      <iframe id="iframe2" data-src="part2.html"></iframe>
     </div>
   </div>
 </div>
@@ -85,13 +81,13 @@ iframe{
 <div id="panelJournal" class="tab-panel">
   <div class="page-width">
     <div class="iframe-wrap">
-      <iframe id="iframe3" src="part3.html"></iframe>
+      <iframe id="iframe3" data-src="part3.html"></iframe>
     </div>
   </div>
 </div>
 
 <script>
-/* ---------------- TAB SYSTEM (PURE & SAFE) ---------------- */
+/* ---------------- TAB SYSTEM ---------------- */
 
 const panels = {
   trackers: document.getElementById('panelTrackers'),
@@ -103,6 +99,34 @@ const buttons = {
   journal:  document.getElementById('tabJournal')
 };
 
+function loadIframe(iframe, mode){
+  if(iframe.dataset.loaded) return;
+
+  iframe.dataset.loaded = "1";
+  iframe.src = iframe.dataset.src;
+
+  iframe.addEventListener('load', ()=>{
+    try{
+      const doc = iframe.contentWindow.document;
+      const body = doc.body;
+
+      if(mode === 'fit'){
+        const scale = 1200 / body.scrollWidth;
+        if(scale < 1){
+          body.style.transform = `scale(${scale})`;
+          body.style.transformOrigin = "top left";
+          body.style.width = body.scrollWidth+"px";
+        }
+        body.style.overflow = "hidden";
+        iframe.style.height = body.scrollHeight * scale + "px";
+      }else{
+        iframe.style.height =
+          doc.documentElement.scrollHeight + "px";
+      }
+    }catch(e){}
+  });
+}
+
 function switchTab(name){
   panels.trackers.classList.remove('active');
   panels.journal.classList.remove('active');
@@ -111,50 +135,22 @@ function switchTab(name){
 
   panels[name].classList.add('active');
   buttons[name].classList.add('active');
-
   localStorage.setItem('activeTab', name);
+
+  // load required iframes
+  if(name === 'trackers'){
+    loadIframe(document.getElementById('iframe1'), 'fit');
+    loadIframe(document.getElementById('iframe2'), 'normal');
+  }else{
+    loadIframe(document.getElementById('iframe3'), 'normal');
+  }
 }
 
-buttons.trackers.addEventListener('click', ()=>switchTab('trackers'));
-buttons.journal.addEventListener('click', ()=>switchTab('journal'));
+buttons.trackers.onclick = ()=>switchTab('trackers');
+buttons.journal.onclick  = ()=>switchTab('journal');
 
-/* restore tab ONCE */
-const saved = localStorage.getItem('activeTab');
-switchTab(saved === 'journal' ? 'journal' : 'trackers');
-
-
-/* ---------------- IFRAME INIT (RUN ONCE EVER) ---------------- */
-
-function initIframe(iframe, mode){
-  if(iframe.dataset.init) return;
-  iframe.dataset.init = "1";
-
-  try{
-    const doc = iframe.contentWindow.document;
-    const body = doc.body;
-
-    if(mode === 'fit'){   // part 1
-      const scale = 1200 / body.scrollWidth;
-      if(scale < 1){
-        body.style.transform = `scale(${scale})`;
-        body.style.transformOrigin = "top left";
-        body.style.width = body.scrollWidth+"px";
-      }
-      body.style.overflow = "hidden";
-      iframe.style.height = body.scrollHeight * scale + "px";
-    }else{
-      iframe.style.height =
-        doc.documentElement.scrollHeight + "px";
-    }
-  }catch(e){}
-}
-
-document.getElementById('iframe1')
-  .addEventListener('load', e=>initIframe(e.target,'fit'));
-document.getElementById('iframe2')
-  .addEventListener('load', e=>initIframe(e.target,'normal'));
-document.getElementById('iframe3')
-  .addEventListener('load', e=>initIframe(e.target,'normal'));
+/* restore tab */
+switchTab(localStorage.getItem('activeTab') || 'trackers');
 </script>
 
 </body>
