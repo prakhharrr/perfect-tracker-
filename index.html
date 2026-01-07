@@ -72,15 +72,22 @@ iframe{
 <!-- TRACKERS -->
 <div id="panelTrackers" class="tab-panel">
   <div class="page-width">
+
+    <!-- PART 1 -->
     <div class="iframe-wrap">
       <iframe id="iframe1" src="part1.html"></iframe>
     </div>
+
+    <!-- PART 2 -->
     <div class="iframe-wrap">
       <iframe id="iframe2" src="part2.html"></iframe>
     </div>
+
+    <!-- PART 4 (NEW, after part 2) -->
     <div class="iframe-wrap">
       <iframe id="iframe4" src="part4.html"></iframe>
     </div>
+
   </div>
 </div>
 
@@ -94,7 +101,7 @@ iframe{
 </div>
 
 <script>
-/* ---------------- TAB SYSTEM (PURE & SAFE) ---------------- */
+/* ---------------- TAB SYSTEM (UNCHANGED) ---------------- */
 
 const panels = {
   trackers: document.getElementById('panelTrackers'),
@@ -104,6 +111,69 @@ const panels = {
 const buttons = {
   trackers: document.getElementById('tabTrackers'),
   journal:  document.getElementById('tabJournal')
+};
+
+function switchTab(name){
+  panels.trackers.classList.remove('active');
+  panels.journal.classList.remove('active');
+  buttons.trackers.classList.remove('active');
+  buttons.journal.classList.remove('active');
+
+  panels[name].classList.add('active');
+  buttons[name].classList.add('active');
+
+  localStorage.setItem('activeTab', name);
+}
+
+buttons.trackers.addEventListener('click', ()=>switchTab('trackers'));
+buttons.journal.addEventListener('click', ()=>switchTab('journal'));
+
+/* restore tab */
+const saved = localStorage.getItem('activeTab');
+switchTab(saved === 'journal' ? 'journal' : 'trackers');
+
+
+/* ---------------- IFRAME INIT (SAME LOGIC) ---------------- */
+
+function initIframe(iframe, mode){
+  if(iframe.dataset.init) return;
+  iframe.dataset.init = "1";
+
+  try{
+    const doc = iframe.contentWindow.document;
+    const body = doc.body;
+
+    if(mode === 'fit'){   // part 1 only
+      const scale = 1200 / body.scrollWidth;
+      if(scale < 1){
+        body.style.transform = `scale(${scale})`;
+        body.style.transformOrigin = "top left";
+        body.style.width = body.scrollWidth + "px";
+      }
+      body.style.overflow = "hidden";
+      iframe.style.height = body.scrollHeight * scale + "px";
+    }else{
+      iframe.style.height =
+        doc.documentElement.scrollHeight + "px";
+    }
+  }catch(e){}
+}
+
+document.getElementById('iframe1')
+  .addEventListener('load', e=>initIframe(e.target,'fit'));
+
+document.getElementById('iframe2')
+  .addEventListener('load', e=>initIframe(e.target,'normal'));
+
+document.getElementById('iframe4')
+  .addEventListener('load', e=>initIframe(e.target,'normal'));
+
+document.getElementById('iframe3')
+  .addEventListener('load', e=>initIframe(e.target,'normal'));
+</script>
+
+</body>
+</html>  journal:  document.getElementById('tabJournal')
 };
 
 function switchTab(name){
