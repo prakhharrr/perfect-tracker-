@@ -14,8 +14,8 @@ html,body{
   font-family:system-ui,-apple-system,Segoe UI,sans-serif;
 }
 
-/* fixed width */
-.page-width{
+/* fixed desktop width */
+.page{
   width:1200px;
   margin:0 auto;
 }
@@ -43,67 +43,69 @@ html,body{
   border-color:#7df;
 }
 
-/* panels */
-.tab-panel{
-  display:none;
-}
-.tab-panel.active{
-  display:block;
+/* iframe blocks */
+.block{
+  margin-bottom:48px;
 }
 
-/* iframe */
-.iframe-wrap{margin-bottom:48px;}
 iframe{
   width:100%;
   border:none;
   display:block;
 }
 </style>
+
+<script defer>
+document.addEventListener("DOMContentLoaded", () => {
+
+  const btnTrackers = document.getElementById("btnTrackers");
+  const btnJournal  = document.getElementById("btnJournal");
+  const content     = document.getElementById("content");
+
+  function loadTrackers(){
+    content.innerHTML = `
+      <div class="block"><iframe src="part1.html"></iframe></div>
+      <div class="block"><iframe src="part2.html"></iframe></div>
+      <div class="block"><iframe src="part4.html"></iframe></div>
+    `;
+    btnTrackers.classList.add("active");
+    btnJournal.classList.remove("active");
+    localStorage.setItem("activeTab","trackers");
+  }
+
+  function loadJournal(){
+    content.innerHTML = `
+      <div class="block"><iframe src="part3.html"></iframe></div>
+    `;
+    btnJournal.classList.add("active");
+    btnTrackers.classList.remove("active");
+    localStorage.setItem("activeTab","journal");
+  }
+
+  btnTrackers.onclick = loadTrackers;
+  btnJournal.onclick  = loadJournal;
+
+  // restore last tab
+  if(localStorage.getItem("activeTab")==="journal"){
+    loadJournal();
+  }else{
+    loadTrackers();
+  }
+});
+</script>
 </head>
 
 <body>
 
-<!-- TABS -->
 <div class="tabs">
-  <button id="tabTrackers" class="tab-btn">📊 Trackers</button>
-  <button id="tabJournal"  class="tab-btn">📓 Journal</button>
+  <button id="btnTrackers" class="tab-btn">📊 Trackers</button>
+  <button id="btnJournal"  class="tab-btn">📓 Journal</button>
 </div>
 
-<!-- TRACKERS -->
-<div id="panelTrackers" class="tab-panel">
-  <div class="page-width">
+<div class="page" id="content"></div>
 
-    <!-- PART 1 -->
-    <div class="iframe-wrap">
-      <iframe id="iframe1" src="part1.html"></iframe>
-    </div>
-
-    <!-- PART 2 -->
-    <div class="iframe-wrap">
-      <iframe id="iframe2" src="part2.html"></iframe>
-    </div>
-
-    <!-- PART 4 (NEW, after part 2) -->
-    <div class="iframe-wrap">
-      <iframe id="iframe4" src="part4.html"></iframe>
-    </div>
-
-  </div>
-</div>
-
-<!-- JOURNAL -->
-<div id="panelJournal" class="tab-panel">
-  <div class="page-width">
-    <div class="iframe-wrap">
-      <iframe id="iframe3" src="part3.html"></iframe>
-    </div>
-  </div>
-</div>
-
-<script defer>
-  // remove accidental text nodes from body (mobile chrome bug fix)
-document.body.childNodes.forEach(n=>{
-  if(n.nodeType === Node.TEXT_NODE && n.textContent.trim()){
+</body>
+</html>  if(n.nodeType === Node.TEXT_NODE && n.textContent.trim()){
     n.remove();
   }
 });
